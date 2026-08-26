@@ -1,0 +1,139 @@
+#%% Import libraries
+
+import numpy as np
+import cupy as cp
+import h5py as h5
+from modules.mlsarray import Slicelist,init_kgrid
+from modules.mlsarray import irft2 as original_irft2, rft2 as original_rft2, irft as original_irft, rft as original_rft
+from modules.gamma import gam_max   
+from modules.gensolver import Gensolver,save_data
+from functools import partial
+from modules.basics import format_exp, round_to_nsig
+import os
+
+#%% Parameters
+
+Npx,Npy=512,512
+Lx,Ly=64*np.pi,64*np.pi
+kapt=2.0
+kapn=0.2
+kapb=0.02
+
+Nx,Ny=2*(Npx//3),2*(Npy//3)
+sl=Slicelist(Nx,Ny)
+slbar=np.s_[int(Ny/2)-1:int(Ny/2)*int(Nx/2)-1:int(Ny/2)]
+kx,ky=init_kgrid(sl,Lx,Ly)
+kpsq=kx**2+ky**2
+Nk=kx.size
+dk=float(ky[0])
+sigk=cp.sign(ky)
+Lk=sigk+kpsq
+
+nu=0.1
+H=8.6e-6 #10*gam*dk**4
+
+dtshow=1.0
+gammax=gam_max(kx,ky,kapn,kapt,kapb,nu,H)
+dtstep,dtsavecb=round_to_nsig((512/Npx)*0.002/gammax,1),round_to_nsig(0.02/gammax,1)
+t0,t1=0.0,round(600/gammax,0) #100/gammax #600/gammax
+rtol,atol=1e-8,1e-10
+wecontinue=True
+
+output_dir = f"data/{Npx}/"
+os.makedirs(output_dir, exist_ok=True)
+fname = output_dir + f'out_kapt_{str(kapt).replace(".", "_")}_nu_{str(nu).replace(".", "_")}_H_{format_exp(H)}.h5'
+if not os.path.exists(fname):
+    wecontinue=False
+
+#%% Functions
+
+irft2 = partial(original_irft2,Npx=Npx,Npy=Npy,sl=sl)
+rft2 = partial(original_rft2,sl=sl)
+irft = partial(original_irft,Npx=Npx,sl=sl)
+rft = partial(original_rft,sl=sl)
+
+def init_fields(kx,ky,w=10.0,A=1e-6):
+    Phik=A*cp.exp(-kx**2/2/w**2-ky**2/2/w**2)*cp.exp(1j*2*np.pi*cp.random.rand(kx.size).reshape(kx.shape))
+    Pk=A*cp.exp(-kx**2/2/w**2-ky**2/2/w**2)*cp.exp(1j*2*np.pi*cp.random.rand(kx.size).reshape(kx.shape))
+
+    Phik[slbar]=0
+    Pk[slbar]=0
+    zk=np.hstack((Phik,Pk))
+    return zk
+
+def fsavecb(t,y,flag):
+    zk=y.view(dtype=complex)
+    Phik,Pk=zk[:Nk],zk[Nk:]
+    Omk=-kpsq*Phik
+    vy=irft2(1j*kx*Phik) 
+    Om=irft2(Omk)
+    P=irft2(Pk)
+    if flag=='fields':
+        save_data(fl,'fields',ext_flag=True,Omk=Omk.get(),Pk=Pk.get(),t=t)
+    elif flag=='zonal':
+        vbar=cp.mean(vy,1)
+        Ombar=cp.mean(Om,1)
+        Pbar=cp.mean(P,1)
+        save_data(fl,'zonal',ext_flag=True,vbar=vbar.get(),Ombar=Ombar.get(),Pbar=Pbar.get(),t=t)
+    elif flag=='fluxes':
+        vx=irft2(-1j*ky*Phik) #ExB flow: x comp
+        wx=irft2(-1j*ky*Pk) #diamagnetic flow: x comp
+        Q=cp.mean(P*vx,1)
+        Qbox=cp.mean(Q)
+        Rphi=cp.mean(vy*vx,1)
+        Rd=cp.mean(vy*wx,1)
+        save_data(fl,'fluxes',ext_flag=True,Q=Q.get(),Qbox=Qbox.get(),Rphi=Rphi.get(),Rd=Rd.get(),t=t)
+    save_data(fl,'last',ext_flag=False,zk=zk.get(),t=t)
+
+def fshowcb(t,y):
+    zk=y.view(dtype=complex)
+    Phik,Pk=zk[:Nk],zk[Nk:]
+    vx=irft2(-1j*ky*Phik)
+    P=irft2(Pk)
+    Qbox=cp.mean(P*vx)
+    Ktot = np.sum(kpsq*np.abs(Phik)**2)
+    Kbar = np.sum((kx[slbar]*np.abs(Phik[slbar]))**2)
+    print(f'Kbar/Ktot={Kbar/Ktot*100:.3g}%, Qbox={Qbox.get():.3g}')
+
+def rhs_itg(t,y):
+    zk=y.view(dtype=complex)
+    dzkdt=cp.zeros_like(zk)
+    Phik,Pk=zk[:Nk],zk[Nk:]
+    dPhikdt,dPkdt=dzkdt[:Nk],dzkdt[Nk:]
+    
+    dxphi=irft2(1j*kx*Phik)
+    dyphi=irft2(1j*ky*Phik)
+    dxP=irft2(1j*kx*Pk)
+    dyP=irft2(1j*ky*Pk)
+    nOmg=irft2(Lk*Phik)
+
+    dPhikdt[:]=-1j*ky*kapn*Phik/Lk+1j*ky*(kapn+kapt)*kpsq*Phik/Lk+1j*ky*kapb*Pk/Lk-nu*kpsq*Phik-sigk*H/(kpsq**2)*Phik
+    dPkdt[:]=-1j*ky*(kapn+kapt)*Phik-nu*kpsq*Pk-sigk*H/(kpsq**2)*Pk
+
+    dPhikdt[:] += (1j*kx*rft2(dyphi*nOmg)-1j*ky*rft2(dxphi*nOmg)) / Lk
+    dPhikdt[:] += (kx**2*rft2(dxphi*dyP) - ky**2*rft2(dyphi*dxP) + kx*ky*rft2(dyphi*dyP - dxphi*dxP)) / Lk
+
+    dPkdt[:]+=rft2(dyphi*dxP-dxphi*dyP)
+    return dzkdt.view(dtype=float)
+
+#%% Run the simulation    
+
+print(f'nu={nu}, kapn={kapn}, kapt={kapt}, kapb={kapb}')
+
+if(wecontinue):
+    fl=h5.File(fname,'r+',libver='latest')
+    fl.swmr_mode = True
+    zk=fl['last/zk'][()]
+    t0=fl['last/t'][()]
+else:
+    fl=h5.File(fname,'w',libver='latest')
+    fl.swmr_mode = True
+    zk=init_fields(kx,ky)
+    save_data(fl,'data',ext_flag=False,kx=kx.get(),ky=ky.get(),t0=t0,t1=t1)
+    save_data(fl,'params',ext_flag=False,Npx=Npx,Npy=Npy,Lx=Lx,Ly=Ly,kapn=kapn,kapt=kapt,kapb=kapb,nu=nu,H=H,gammax=gammax)
+
+fsave = [partial(fsavecb,flag='fields'), partial(fsavecb,flag='zonal'), partial(fsavecb,flag='fluxes')]
+dtsave=[10*dtsavecb,dtsavecb,dtsavecb]
+r=Gensolver('cupy_ivp.DOP853',rhs_itg,t0,zk.view(dtype=float),t1,fsave=fsave,fshow=fshowcb,dtstep=dtstep,dtshow=dtshow,dtsave=dtsave,dense=False,rtol=rtol,atol=atol)
+r.run()
+fl.close()
