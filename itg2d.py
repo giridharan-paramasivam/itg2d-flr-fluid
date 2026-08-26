@@ -6,7 +6,8 @@ import h5py as h5
 from modules.mlsarray import Slicelist,init_kgrid
 from modules.mlsarray import irft2 as original_irft2, rft2 as original_rft2, irft as original_irft, rft as original_rft
 from modules.gamma import gam_max   
-from modules.gensolver import Gensolver,save_data
+from modules.gensolver import Gensolver
+from modules.h5tools import save_data
 from functools import partial
 from modules.basics import format_exp, round_to_nsig
 import os
