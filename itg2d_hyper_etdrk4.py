@@ -32,6 +32,7 @@ dk=float(ky[0])
 sigk=cp.sign(cp.abs(ky))
 Lk=sigk+kpsq
 
+# viscosity coefficients
 nu=1e-1
 H=4e-5 #1e-5,4e-5
 

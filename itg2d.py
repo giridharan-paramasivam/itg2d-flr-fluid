@@ -30,6 +30,7 @@ dk=float(ky[0])
 sigk=cp.sign(cp.abs(ky))
 Lk=sigk+kpsq
 
+# viscosity coefficients
 nu=0.1
 H=8.61e-6 #~10*gam*dk**4
 
@@ -42,7 +43,7 @@ wecontinue=False
 
 output_dir = f"data/{Npx}/"
 os.makedirs(output_dir, exist_ok=True)
-fname = output_dir + f'out_kapt_{str(kapt).replace(".", "_")}_nu_{str(nu).replace(".", "_")}_H_{format_exp(H)}.h5'
+fname = output_dir + f'out_kapt_{str(kapt).replace(".", "_")}_nu_{format_exp(nu)}_H_{format_exp(H)}.h5'
 if not os.path.exists(fname):
     wecontinue=False
 
