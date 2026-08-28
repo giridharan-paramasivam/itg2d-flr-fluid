@@ -38,7 +38,7 @@ H=4e-5 #1e-5,4e-5
 dtshow=1.0
 gammax=gam_max(kx,ky,kapn,kapt,kapb,nu,H,n_hyper)
 dtstep,dtsavecb=round_to_nsig((512/Npx)*0.002/gammax,1),round_to_nsig(0.02/gammax,1)
-t0,t1=0.0,round(50/gammax,0) 
+t0,t1=0.0,round(1000/gammax,0) 
 wecontinue=False
 
 output_dir = f"data/{Npx}/"

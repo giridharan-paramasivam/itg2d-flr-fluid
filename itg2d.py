@@ -36,7 +36,7 @@ H=8.61e-6 #~10*gam*dk**4
 dtshow=1.0
 gammax=gam_max(kx,ky,kapn,kapt,kapb,nu,H)
 dtstep,dtsavecb=round_to_nsig((512/Npx)*0.002/gammax,1),round_to_nsig(0.02/gammax,1)
-t0,t1=0.0,round(100/gammax,0)
+t0,t1=0.0,round(300/gammax,0)
 rtol,atol=1e-8,1e-10
 wecontinue=False
 
