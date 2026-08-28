@@ -1,7 +1,7 @@
 from time import time
 import numpy as np
 
-class Gensolver:    
+class gensolver:    
     def __init__(self,solver,f,t0,y0,t1,fsave,fshow=None,fy=None,dtstep=0.1,dtshow=None,dtsave=None,dtfupdate=None,force_update=None,dense=False,**kwargs):
 
         svs=solver.split(".")

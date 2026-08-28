@@ -5,7 +5,7 @@ import cupy as cp
 import h5py as h5
 from mlsarray.mlsarray import slicelist,init_kgrid
 from mlsarray.mlsarray import irft2 as original_irft2, rft2 as original_rft2
-from modules.gensolver import Gensolver
+from modules.gensolver import gensolver
 from etdrk4cp.h5tools import save_data
 from modules.gamma import gam_max 
 from modules.basics import format_exp, round_to_nsig
@@ -133,6 +133,6 @@ else:
 
 fsave = [partial(fsavecb,flag='fields'), partial(fsavecb,flag='zonal'), partial(fsavecb,flag='fluxes')]
 dtsave=[10*dtsavecb,dtsavecb,dtsavecb]
-r=Gensolver('cupy_ivp.DOP853',rhs_itg,t0,zk.view(dtype=float),t1,fsave=fsave,fshow=fshowcb,dtstep=dtstep,dtshow=dtshow,dtsave=dtsave,dense=False,rtol=rtol,atol=atol)
+r=gensolver('cupy_ivp.DOP853',rhs_itg,t0,zk.view(dtype=float),t1,fsave=fsave,fshow=fshowcb,dtstep=dtstep,dtshow=dtshow,dtsave=dtsave,dense=False,rtol=rtol,atol=atol)
 r.run()
 fl.close()
