@@ -1,12 +1,10 @@
-/.venv
-/data
-/data_*
-/_tmpimg_folder
+/.venv/
+/data/
+/data_*/
+/_tmpimg_folder/
 __pycache__/
-/modules/__pycache__/
 .Trash*/
-/.github
-/.vscode
+/.vscode/
 *.log
 *.lyx~
 *.lyx#
