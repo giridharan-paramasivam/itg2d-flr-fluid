@@ -23,7 +23,7 @@ class Gensolver:
             svf=getattr(scpint,svs[1])
             r=svf(f,t0,y0,t1,max_step=dtstep,**kwargs)
         if svs[0]=='cupy_ivp':
-            from . import cupy_ivp as cpi
+            import cupy_ivp as cpi
             svf=getattr(cpi,svs[1])
             r=svf(f,t0,y0,t1,max_step=dtstep,**kwargs)
         if not hasattr(r, 'integrate'):
