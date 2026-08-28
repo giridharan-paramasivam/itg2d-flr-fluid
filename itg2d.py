@@ -3,42 +3,42 @@
 import numpy as np
 import cupy as cp
 import h5py as h5
-from modules.mlsarray import Slicelist,init_kgrid
-from modules.mlsarray import irft2 as original_irft2, rft2 as original_rft2, irft as original_irft, rft as original_rft
-from modules.gamma import gam_max   
+from mlsarray.mlsarray import slicelist,init_kgrid
+from mlsarray.mlsarray import irft2 as original_irft2, rft2 as original_rft2
 from modules.gensolver import Gensolver
-from modules.h5tools import save_data
-from functools import partial
+from etdrk4cp.h5tools import save_data
+from modules.gamma import gam_max 
 from modules.basics import format_exp, round_to_nsig
+from functools import partial
 import os
 
 #%% Parameters
 
 Npx,Npy=512,512
-Lx,Ly=64*np.pi,64*np.pi
+Lx,Ly=32*np.pi,32*np.pi
 kapt=2.0
 kapn=0.2
 kapb=0.02
 
 Nx,Ny=2*(Npx//3),2*(Npy//3)
-sl=Slicelist(Nx,Ny)
+sl=slicelist(Nx,Ny)
 slbar=np.s_[int(Ny/2)-1:int(Ny/2)*int(Nx/2)-1:int(Ny/2)]
 kx,ky=init_kgrid(sl,Lx,Ly)
 kpsq=kx**2+ky**2
 Nk=kx.size
 dk=float(ky[0])
-sigk=cp.sign(ky)
+sigk=cp.sign(cp.abs(ky))
 Lk=sigk+kpsq
 
 nu=0.1
-H=8.6e-6 #10*gam*dk**4
+H=8.61e-6 #~10*gam*dk**4
 
 dtshow=1.0
 gammax=gam_max(kx,ky,kapn,kapt,kapb,nu,H)
 dtstep,dtsavecb=round_to_nsig((512/Npx)*0.002/gammax,1),round_to_nsig(0.02/gammax,1)
-t0,t1=0.0,round(600/gammax,0) #100/gammax #600/gammax
+t0,t1=0.0,round(100/gammax,0)
 rtol,atol=1e-8,1e-10
-wecontinue=True
+wecontinue=False
 
 output_dir = f"data/{Npx}/"
 os.makedirs(output_dir, exist_ok=True)
@@ -48,10 +48,8 @@ if not os.path.exists(fname):
 
 #%% Functions
 
-irft2 = partial(original_irft2,Npx=Npx,Npy=Npy,sl=sl)
+irft2 = partial(original_irft2,sl=sl)
 rft2 = partial(original_rft2,sl=sl)
-irft = partial(original_irft,Npx=Npx,sl=sl)
-rft = partial(original_rft,sl=sl)
 
 def init_fields(kx,ky,w=10.0,A=1e-6):
     Phik=A*cp.exp(-kx**2/2/w**2-ky**2/2/w**2)*cp.exp(1j*2*np.pi*cp.random.rand(kx.size).reshape(kx.shape))

@@ -1,3 +1,6 @@
 [submodule "etdrk4cp"]
 	path = etdrk4cp
 	url = git@github.com:giridharan-paramasivam/etdrk4cp.git
+[submodule "mlsarray"]
+	path = mlsarray
+	url = git@github.com:giridharan-paramasivam/mlsarray.git

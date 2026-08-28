@@ -2,8 +2,7 @@
 /data
 /data_*
 /_tmpimg_folder
-/modules/__pycache__
-/__pycache__
+__pycache__/
 .Trash*/
 /.github
 /.vscode

@@ -4,13 +4,13 @@ import os
 import numpy as np
 import cupy as cp
 import h5py as h5
-from modules.mlsarray import Slicelist, init_kgrid
-from modules.mlsarray import irft2 as original_irft2, rft2 as original_rft2, irft as original_irft, rft as original_rft
+from mlsarray.mlsarray import slicelist, init_kgrid
+from mlsarray.mlsarray import irft2 as original_irft2, rft2 as original_rft2
+from etdrk4cp.gsol import gsol, callbacks
+from etdrk4cp.h5tools import save_data
 from modules.gamma import gam_max   
-from modules.gsol import gsol, callbacks
-from modules.h5tools import save_data
-from functools import partial
 from modules.basics import format_exp, round_to_nsig
+from functools import partial
 from time import time
 
 #%% Parameters
@@ -20,16 +20,16 @@ Lx,Ly=64*np.pi,64*np.pi
 kapt=2.0
 kapn=0.2
 kapb=0.02
-n_hyper=3
+n_hyper=3 #k^6
 
 Nx,Ny=2*(Npx//3),2*(Npy//3)
-sl=Slicelist(Nx,Ny)
+sl=slicelist(Nx,Ny)
 slbar=np.s_[int(Ny/2)-1:int(Ny/2)*int(Nx/2)-1:int(Ny/2)]
 kx,ky=init_kgrid(sl,Lx,Ly)
 kpsq=kx**2+ky**2
 Nk=kx.size
 dk=float(ky[0])
-sigk=cp.sign(ky)
+sigk=cp.sign(cp.abs(ky))
 Lk=sigk+kpsq
 
 nu=1e-1
@@ -38,8 +38,8 @@ H=4e-5 #1e-5,4e-5
 dtshow=1.0
 gammax=gam_max(kx,ky,kapn,kapt,kapb,nu,H,n_hyper)
 dtstep,dtsavecb=round_to_nsig((512/Npx)*0.002/gammax,1),round_to_nsig(0.02/gammax,1)
-t0,t1=0.0,round(1000/gammax,0) 
-wecontinue=True
+t0,t1=0.0,round(50/gammax,0) 
+wecontinue=False
 
 output_dir = f"data/{Npx}/"
 os.makedirs(output_dir, exist_ok=True)
@@ -49,10 +49,8 @@ if not os.path.exists(fname):
 
 #%% Functions
 
-irft2 = partial(original_irft2,Npx=Npx,Npy=Npy,sl=sl)
+irft2 = partial(original_irft2,sl=sl)
 rft2 = partial(original_rft2,sl=sl)
-irft = partial(original_irft,Npx=Npx,sl=sl)
-rft = partial(original_rft,sl=sl)
 
 def init_fields(kx,ky,w=10.0,A=1e-6):
     Phik=A*cp.exp(-kx**2/2/w**2-ky**2/2/w**2)*cp.exp(1j*2*np.pi*cp.random.rand(kx.size).reshape(kx.shape))
@@ -120,7 +118,7 @@ def rhs_nl(t,y):
     nOmg = irft2(Lk*Phik)
 
     dPhikdt[:] += (1j*kx*rft2(dyphi*nOmg) - 1j*ky*rft2(dxphi*nOmg))/ Lk
-    dPhikdt[:] += (kx**2*rft2(dxphi*dyP) - ky**2*rft2(dyphi*dxP) + kx*ky*rft2(dyphi*dyP - dxphi*dxP)) / Lk
+    dPhikdt[:] += (kx**2*rft2(dxphi*dyP) - ky**2*rft2(dyphi*dxP) + kx*ky*rft2(dyphi*dyP - dxphi*dxP)) / Lk # dimagnetic nonlinearity
 
     dPkdt[:] += rft2(dyphi*dxP - dxphi*dyP)
     
@@ -135,8 +133,8 @@ if(wecontinue):
     fl.swmr_mode = True
     zk = cp.array(fl['last/zk'][()])
     t0 = fl['last/t'][()]
-    tnexts = fl['last/tnexts'][()]
     dtstep = fl['last/dt'][()]
+    tnexts = fl['last/tnexts'][()]
 else:
     fl = h5.File(fname,'w',libver='latest')
     fl.swmr_mode = True
@@ -149,6 +147,7 @@ ct=time()
 fcbs=[fshowcb,partial(fsavecb,flag='fields'), partial(fsavecb,flag='zonal'), partial(fsavecb,flag='fluxes')]
 dtcbs=[dtshow,10*dtsavecb,dtsavecb,dtsavecb]
 cbs=callbacks(dtcbs,fcbs,tnexts)
-r=gsol(rhs_nl, t0, zk, t1, lm, dtstep, callbacks=cbs, sv="etdrk4cp", maxstep=1.0, tol=1e-8)
+r=gsol(rhs_nl, t0, zk, t1, lm, dtstep, callbacks=cbs, maxstep=1.0, tol=1e-8)
 r.run()
 fl.close()
+
