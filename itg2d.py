@@ -34,7 +34,7 @@ Lk=sigk+kpsq
 nu=0.1
 H=8.61e-6 #~10*gam*dk**4
 
-dtshow=1.0
+dtshowcb=1.0
 gammax=gam_max(kx,ky,kapn,kapt,kapb,nu,H)
 dtstep,dtsavecb=round_to_nsig((512/Npx)*0.002/gammax,1),round_to_nsig(0.02/gammax,1)
 t0,t1=0.0,round(300/gammax,0)
@@ -134,6 +134,6 @@ else:
 
 fsave = [partial(fsavecb,flag='fields'), partial(fsavecb,flag='zonal'), partial(fsavecb,flag='fluxes')]
 dtsave=[10*dtsavecb,dtsavecb,dtsavecb]
-r=gensolver('cupy_ivp.DOP853',rhs_itg,t0,zk.view(dtype=float),t1,fsave=fsave,fshow=fshowcb,dtstep=dtstep,dtshow=dtshow,dtsave=dtsave,dense=False,rtol=rtol,atol=atol)
+r=gensolver('cupy_ivp.DOP853',rhs_itg,t0,zk.view(dtype=float),t1,fsave=fsave,fshow=fshowcb,dtstep=dtstep,dtshow=dtshowcb,dtsave=dtsave,dense=False,rtol=rtol,atol=atol)
 r.run()
 fl.close()

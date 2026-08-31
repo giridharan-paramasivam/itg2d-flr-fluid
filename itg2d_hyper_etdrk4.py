@@ -36,7 +36,7 @@ Lk=sigk+kpsq
 nu=1e-1
 H=4e-5 #1e-5,4e-5
 
-dtshow=1.0
+dtshowcb=1.0
 gammax=gam_max(kx,ky,kapn,kapt,kapb,nu,H,n_hyper)
 dtstep,dtsavecb=round_to_nsig((512/Npx)*0.002/gammax,1),round_to_nsig(0.02/gammax,1)
 t0,t1=0.0,round(1000/gammax,0) 
@@ -146,9 +146,8 @@ else:
 
 ct=time()
 fcbs=[fshowcb,partial(fsavecb,flag='fields'), partial(fsavecb,flag='zonal'), partial(fsavecb,flag='fluxes')]
-dtcbs=[dtshow,10*dtsavecb,dtsavecb,dtsavecb]
+dtcbs=[dtshowcb,10*dtsavecb,dtsavecb,dtsavecb]
 cbs=callbacks(dtcbs,fcbs,tnexts)
 r=gsol(rhs_nl, t0, zk, t1, lm, dtstep, callbacks=cbs, maxstep=1.0, tol=1e-8)
 r.run()
 fl.close()
-
