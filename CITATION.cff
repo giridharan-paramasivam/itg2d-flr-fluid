@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+type: software
+title: "itg2d-flr-fluid"
+abstract: "Initial public release of itg2d-flr-fluid, a pseudospectral solver for 2D fluid ITG with FLR nonlinearities. See README for setup, dependencies, and usage."
+version: v1.0.0
+date-released: "2026-08-31"
+license: CC-BY-4.0
+repository-code: "https://github.com/giridharan-paramasivam/itg2d-flr-fluid"
+doi: "10.5281/zenodo.22208949"
+authors:
+- family-names: "Paramasivam"
+  given-names: "Giridharan"
+  affiliation: Laboratoire de Physique des Plasmas
+  orcid: "https://orcid.org/0000-0002-7700-2675"
+- family-names: "Gürcan"
+  given-names: "Özgür"
+  affiliation: Laboratoire de Physique des Plasmas
+  orcid: "https://orcid.org/0000-0002-2278-1544"
+keywords:
+- "euroscivoc:271"
+- "Plasma physics"
+- "euroscivoc:751"
+- "Nuclear fusion"
+- "Turbulence"
+identifiers:
+- type: swh
+  value: "swh:1:dir:84146d37f2959e7c193e39e6a735349e1cbae37e;origin=https://doi.org/10.5281/zenodo.22208948;visit=swh:1:snp:36758b523d1d2d8acce056701162c26f63d4bb01;anchor=swh:1:rel:fac69a195e8a341331afdf788f23111ef6e24e85;path=giridharan-paramasivam-itg2d-flr-fluid-24b277a"
