@@ -1,5 +1,7 @@
 # itg2d-flr-fluid
 
+[![DOI](https://zenodo.org/badge/1347527530.svg)](https://doi.org/10.5281/zenodo.22208948)
+
 Pseudospectral solver for 2D fluid ITG with FLR nonlinearities.
 
 Initialize the submodules with:
